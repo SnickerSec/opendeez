@@ -43,6 +43,17 @@ const CONFIG = {
   }
 };
 
+// HTML escape utility to prevent XSS
+const escapeHtml = (str) => {
+  if (typeof str !== 'string') return str;
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+};
+
 const app = express();
 const dataDir = path.join(__dirname, 'data');
 
@@ -396,9 +407,20 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false,
 }));
 
-// CORS
+// CORS - use allowlist in all environments
 app.use(cors({
-  origin: CONFIG.env === 'production' ? CONFIG.corsOrigins : true,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    const allowedOrigins = CONFIG.env === 'production'
+      ? CONFIG.corsOrigins
+      : [...CONFIG.corsOrigins, 'http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001'];
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 
@@ -577,25 +599,29 @@ async function sendNotificationToSubscriber(restaurantName, availableDates, rest
         },
       });
 
-      const unsubscribeHtml = unsubscribeUrl
+      const safeUnsubscribeUrl = unsubscribeUrl ? encodeURI(unsubscribeUrl) : '';
+      const unsubscribeHtml = safeUnsubscribeUrl
         ? `<p style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee; font-size: 12px; color: #666;">
-            <a href="${unsubscribeUrl}" style="color: #666;">Unsubscribe from these notifications</a>
+            <a href="${safeUnsubscribeUrl}" style="color: #666;">Unsubscribe from these notifications</a>
           </p>`
         : '';
+
+      const safeRestaurantName = escapeHtml(restaurantName);
+      const safeRestaurantUrl = encodeURI(restaurantUrl);
 
       await transporter.sendMail({
         from: process.env.SMTP_FROM || process.env.SMTP_USER,
         to: notifyEmail,
-        subject: `🎉 OpenTable: ${restaurantName} Availability Found!`,
+        subject: `🎉 OpenTable: ${safeRestaurantName} Availability Found!`,
         text: message,
         html: `
           <h2>🎉 OpenTable Availability Found!</h2>
-          <p><strong>Restaurant:</strong> ${restaurantName}</p>
+          <p><strong>Restaurant:</strong> ${safeRestaurantName}</p>
           <h3>Available Dates:</h3>
           <ul>
-            ${availableDates.map(d => `<li><strong>${d.dateDisplay}:</strong> ${d.slots.map(s => s.time).join(', ')}</li>`).join('')}
+            ${availableDates.map(d => `<li><strong>${escapeHtml(d.dateDisplay)}:</strong> ${d.slots.map(s => escapeHtml(s.time)).join(', ')}</li>`).join('')}
           </ul>
-          <p><a href="${restaurantUrl}" style="background: #da3743; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px;">Book Now</a></p>
+          <p><a href="${safeRestaurantUrl}" style="background: #da3743; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px;">Book Now</a></p>
           ${unsubscribeHtml}
         `,
       });
@@ -909,10 +935,18 @@ async function checkDateAvailability(page, date, partySize, restaurantUrl, prefe
 const validateUrl = (url) => {
   try {
     const parsed = new URL(url);
-    return parsed.hostname.includes('opentable.com');
+    // Strict hostname check - must be exactly opentable.com or a subdomain
+    const hostname = parsed.hostname.toLowerCase();
+    return hostname === 'opentable.com' || hostname.endsWith('.opentable.com');
   } catch {
     return false;
   }
+};
+
+// Validate sessionId to prevent path traversal attacks
+const validateSessionId = (sessionId) => {
+  // Session IDs should only contain alphanumeric chars and underscores (e.g., "sub_1234567890" or "1234567890")
+  return typeof sessionId === 'string' && /^[a-zA-Z0-9_]+$/.test(sessionId);
 };
 
 // ============================================
@@ -1344,6 +1378,12 @@ app.post('/api/monitor/unsubscribe/:sessionId/:subscriberId', (req, res) => {
 // Get results endpoint
 app.get('/api/results/:sessionId', (req, res) => {
   const { sessionId } = req.params;
+
+  // Validate sessionId to prevent path traversal
+  if (!validateSessionId(sessionId)) {
+    return res.status(400).json({ error: 'Invalid session ID format' });
+  }
+
   const filepath = path.join(dataDir, `session-${sessionId}.json`);
 
   if (fs.existsSync(filepath)) {
