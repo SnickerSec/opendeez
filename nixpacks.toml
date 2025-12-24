@@ -4,7 +4,6 @@
 [phases.setup]
 nixPkgs = [
   "nodejs_18",
-  "chromium",
   "libuuid",
   "libxkbcommon",
   "nss",
@@ -13,7 +12,21 @@ nixPkgs = [
   "mesa",
   "expat",
   "fontconfig",
-  "freetype"
+  "freetype",
+  "glib",
+  "gtk3",
+  "alsa-lib",
+  "at-spi2-atk",
+  "xorg.libX11",
+  "xorg.libXcomposite",
+  "xorg.libXdamage",
+  "xorg.libXext",
+  "xorg.libXfixes",
+  "xorg.libXrandr",
+  "xorg.libxcb",
+  "pango",
+  "cairo",
+  "dbus"
 ]
 
 [phases.install]
@@ -23,8 +36,7 @@ cmds = ["npm ci"]
 cmds = []
 
 [start]
-cmd = "PUPPETEER_EXECUTABLE_PATH=$(which chromium) npm start"
+cmd = "npm start"
 
 [variables]
-PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
 NODE_ENV = "production"

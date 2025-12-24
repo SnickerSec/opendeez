@@ -484,7 +484,15 @@ async function getBrowser() {
         '--single-process',
         '--no-zygote',
         '--disable-crash-reporter',
-        '--disable-breakpad'
+        '--disable-breakpad',
+        '--crash-dumps-dir=/tmp',
+        '--disable-extensions',
+        '--disable-background-networking',
+        '--disable-default-apps',
+        '--disable-sync',
+        '--disable-translate',
+        '--mute-audio',
+        '--hide-scrollbars'
       ],
     };
 
