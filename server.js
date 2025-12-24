@@ -964,6 +964,41 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Geocoding proxy endpoint (to avoid CORS issues with Nominatim)
+app.get('/api/geocode',
+  query('lat').isFloat({ min: -90, max: 90 }).withMessage('Invalid latitude'),
+  query('lon').isFloat({ min: -180, max: 180 }).withMessage('Invalid longitude'),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
+    const { lat, lon } = req.query;
+
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&addressdetails=1`,
+        {
+          headers: {
+            'User-Agent': 'OpenTableMonitor/1.0 (https://github.com/SnickerSec/opendeez)'
+          }
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Nominatim returned ${response.status}`);
+      }
+
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      logger.error('Geocoding error:', error.message);
+      res.status(502).json({ error: 'Geocoding service unavailable' });
+    }
+  }
+);
+
 // Search restaurants endpoint
 app.get('/api/search',
   query('query').trim().notEmpty().withMessage('Search query is required'),

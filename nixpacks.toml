@@ -23,9 +23,8 @@ cmds = ["npm ci"]
 cmds = []
 
 [start]
-cmd = "npm start"
+cmd = "PUPPETEER_EXECUTABLE_PATH=$(which chromium) npm start"
 
 [variables]
 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
-PUPPETEER_EXECUTABLE_PATH = "/nix/store/chromium/bin/chromium"
 NODE_ENV = "production"

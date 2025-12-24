@@ -999,15 +999,10 @@
           const lat = position.coords.latitude;
           const lng = position.coords.longitude;
 
-          // Reverse geocode to get city, state, zipcode
+          // Reverse geocode to get city, state, zipcode (via backend proxy)
           try {
             const response = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`,
-              {
-                headers: {
-                  'User-Agent': 'OpenTableMonitor/1.0'
-                }
-              }
+              `/api/geocode?lat=${lat}&lon=${lng}`
             );
 
             if (!response.ok) {
