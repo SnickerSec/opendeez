@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenTable Availability Monitor</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      color: white;
+      margin-bottom: 30px;
+    }
+
+    .header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      padding: 30px;
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #333;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.3s;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 600px) {
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 25px;
+    }
+
+    button {
+      flex: 1;
+      padding: 14px 28px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-secondary {
+      background: #f0f0f0;
+      color: #333;
+    }
+
+    .btn-secondary:hover {
+      background: #e0e0e0;
+    }
+
+    .btn-danger {
+      background: #ef4444;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #dc2626;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .status {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 8px;
+      display: none;
+    }
+
+    .status.show {
+      display: block;
+    }
+
+    .status.info {
+      background: #e0f2fe;
+      color: #0369a1;
+      border-left: 4px solid #0284c7;
+    }
+
+    .status.success {
+      background: #dcfce7;
+      color: #15803d;
+      border-left: 4px solid #22c55e;
+    }
+
+    .status.error {
+      background: #fee2e2;
+      color: #b91c1c;
+      border-left: 4px solid #ef4444;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .loading.show {
+      display: block;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #667eea;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .results {
+      margin-top: 20px;
+    }
+
+    .result-item {
+      padding: 15px;
+      border-left: 4px solid #667eea;
+      background: #f8f9fa;
+      margin-bottom: 10px;
+      border-radius: 4px;
+    }
+
+    .result-item.available {
+      border-left-color: #22c55e;
+      background: #f0fdf4;
+    }
+
+    .result-date {
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+
+    .result-times {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .time-slot {
+      padding: 4px 12px;
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      text-decoration: none;
+      color: #667eea;
+      display: inline-block;
+      transition: all 0.2s;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .time-slot:hover {
+      background: #667eea;
+      color: white;
+      border-color: #667eea;
+      transform: translateY(-2px);
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+    }
+
+    .summary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .summary h3 {
+      margin-bottom: 10px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+
+    .summary-item {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .summary-value {
+      font-size: 2rem;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .summary-label {
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+
+    .help-text {
+      font-size: 0.9rem;
+      color: #666;
+      margin-top: 5px;
+    }
+
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-top: 10px;
+    }
+
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+    }
+
+    .checkbox-item input[type="checkbox"] {
+      width: auto;
+      margin-right: 5px;
+    }
+
+    .search-section {
+      background: #f8f9fa;
+      border: 2px dashed #667eea;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 25px;
+    }
+
+    .search-section h3 {
+      margin-bottom: 15px;
+      color: #667eea;
+      font-size: 1.1rem;
+    }
+
+    .search-input-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    .search-input-group input {
+      flex: 1;
+    }
+
+    .search-input-group button {
+      flex: 0 0 auto;
+      padding: 12px 24px;
+    }
+
+    .search-results {
+      margin-top: 15px;
+      display: none;
+    }
+
+    .search-results.show {
+      display: block;
+    }
+
+    .search-result-item {
+      background: white;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .search-result-item:hover {
+      border-color: #667eea;
+      transform: translateX(5px);
+      box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+    }
+
+    .search-result-name {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 4px;
+    }
+
+    .search-result-details {
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    .search-loading {
+      text-align: center;
+      padding: 20px;
+      color: #667eea;
+      display: none;
+    }
+
+    .search-loading.show {
+      display: block;
+    }
+
+    .divider {
+      border: 0;
+      border-top: 2px solid #e0e0e0;
+      margin: 25px 0;
+    }
+
+    .notification-section {
+      background: #f8f9fa;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      overflow: hidden;
+    }
+
+    .notification-header {
+      padding: 15px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 600;
+      color: #333;
+      transition: background 0.2s;
+    }
+
+    .notification-header:hover {
+      background: #e9ecef;
+    }
+
+    .notification-body {
+      padding: 0 15px 15px;
+      border-top: 1px solid #e0e0e0;
+    }
+
+    .notification-body a {
+      color: #667eea;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>OpenTable Monitor</h1>
+      <p>Check restaurant availability automatically</p>
+    </div>
+
+    <div class="card">
+      <div class="search-section">
+        <h3>🔍 Search for a Restaurant</h3>
+        <div class="form-row" style="margin-bottom: 15px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="searchLocation">Location</label>
+            <div class="search-input-group">
+              <input
+                type="text"
+                id="searchLocation"
+                placeholder="City or address"
+              >
+              <button type="button" class="btn-secondary" id="geolocateBtn" title="Use my location">📍</button>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom: 0;">
+            <label for="searchQuery">Restaurant Name</label>
+            <input
+              type="text"
+              id="searchQuery"
+              placeholder="e.g., Bar Leather Apron"
+            >
+          </div>
+        </div>
+        <div style="margin-bottom: 15px;">
+          <button type="button" class="btn-primary" id="searchBtn" style="width: 100%;">Search Restaurants</button>
+        </div>
+        <div id="locationStatus" class="help-text" style="margin-bottom: 10px; display: none;"></div>
+        <div class="search-loading" id="searchLoading">
+          <div class="spinner"></div>
+          <p>Searching OpenTable...</p>
+        </div>
+        <div class="search-results" id="searchResults"></div>
+      </div>
+
+      <div id="activeMonitorsSection" class="search-section" style="display: none; border-color: #22c55e;">
+        <h3 style="color: #22c55e;">📡 Active Monitors (Join to get notified)</h3>
+        <p class="help-text" style="margin-bottom: 10px;">These restaurants are already being monitored. Select one to add your notifications.</p>
+        <div id="activeMonitors"></div>
+      </div>
+
+      <hr class="divider">
+
+      <form id="monitorForm">
+        <div class="form-group">
+          <label for="restaurantUrl">Restaurant OpenTable URL *</label>
+          <input
+            type="url"
+            id="restaurantUrl"
+            placeholder="https://www.opentable.com/r/restaurant-name-city"
+            required
+          >
+          <div class="help-text">Search above or paste URL directly</div>
+        </div>
+
+        <div class="form-group">
+          <label for="restaurantName">Restaurant Name (optional)</label>
+          <input
+            type="text"
+            id="restaurantName"
+            placeholder="e.g., Bar Leather Apron"
+          >
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="partySize">Party Size</label>
+            <select id="partySize">
+              <option value="1">1 person</option>
+              <option value="2" selected>2 people</option>
+              <option value="3">3 people</option>
+              <option value="4">4 people</option>
+              <option value="5">5 people</option>
+              <option value="6">6 people</option>
+              <option value="7">7 people</option>
+              <option value="8">8 people</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="daysToCheck">Days to Check</label>
+            <select id="daysToCheck">
+              <option value="7">Next 7 days</option>
+              <option value="14">Next 14 days</option>
+              <option value="30" selected>Next 30 days</option>
+              <option value="60">Next 60 days</option>
+              <option value="90">Next 90 days</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Days of Week to Check</label>
+          <div class="checkbox-group">
+            <label class="checkbox-item">
+              <input type="checkbox" name="openDays" value="0" checked> Sunday
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" name="openDays" value="1" checked> Monday
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" name="openDays" value="2" checked> Tuesday
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" name="openDays" value="3" checked> Wednesday
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" name="openDays" value="4" checked> Thursday
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" name="openDays" value="5" checked> Friday
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" name="openDays" value="6" checked> Saturday
+            </label>
+          </div>
+        </div>
+
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="concurrency">Parallel Tabs</label>
+            <select id="concurrency">
+              <option value="3">3 tabs (slower)</option>
+              <option value="6" selected>6 tabs (balanced)</option>
+              <option value="9">9 tabs (faster)</option>
+            </select>
+          </div>
+          <div class="form-group"></div>
+        </div>
+
+        <div class="notification-section">
+          <div class="notification-header" onclick="toggleNotifications()">
+            <span>🔔 Notification Settings (for continuous monitoring)</span>
+            <span id="notificationToggle">▼</span>
+          </div>
+          <div id="notificationSettings" class="notification-body" style="display: none;">
+            <p class="help-text" style="margin-bottom: 15px;">Get notified when availability is found. To stop notifications, click "Stop Monitoring & Notifications".</p>
+
+            <div class="form-group">
+              <label for="slackWebhook">Slack Webhook URL</label>
+              <input
+                type="url"
+                id="slackWebhook"
+                placeholder="https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
+              >
+              <div class="help-text">
+                <a href="https://api.slack.com/messaging/webhooks" target="_blank">How to create a Slack webhook</a>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="notifyEmail">Email Address</label>
+              <input
+                type="email"
+                id="notifyEmail"
+                placeholder="your@email.com"
+              >
+              <div class="help-text">Requires server SMTP configuration. Slack recommended instead.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="button-group">
+          <button type="submit" class="btn-primary" id="checkBtn">
+            Check Once
+          </button>
+          <button type="button" class="btn-primary" id="monitorBtn">
+            Start Continuous Monitoring
+          </button>
+          <button type="button" class="btn-danger" id="stopBtn" style="display: none;">
+            Stop Monitoring & Notifications
+          </button>
+        </div>
+      </form>
+
+      <div id="status" class="status"></div>
+
+      <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Checking availability...</p>
+      </div>
+    </div>
+
+    <div id="resultsContainer" style="display: none;">
+      <div class="card">
+        <div id="summary" class="summary"></div>
+        <div id="results" class="results"></div>
+      </div>
+    </div>
+
+    <!-- Subscription Management -->
+    <div class="card" id="subscriptionCard">
+      <h2 style="margin-bottom: 20px; color: #333;">📬 Manage Your Subscriptions</h2>
+
+      <div class="form-group">
+        <label for="lookupEmail">Enter your email to view your subscriptions</label>
+        <div class="search-input-group">
+          <input
+            type="email"
+            id="lookupEmail"
+            placeholder="your@email.com"
+          >
+          <button type="button" class="btn-primary" id="lookupBtn">Look Up</button>
+        </div>
+      </div>
+
+      <div id="subscriptionsList" style="display: none;">
+        <h3 style="margin: 20px 0 15px; color: #333;">Your Active Subscriptions</h3>
+        <div id="subscriptionsContent"></div>
+      </div>
+
+      <div id="noSubscriptions" style="display: none; padding: 20px; text-align: center; color: #666; background: #f8f9fa; border-radius: 8px;">
+        No subscriptions found for this email address.
+      </div>
+    </div>
+
+    <!-- Unsubscribe Confirmation Modal -->
+    <div id="unsubscribeModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+      <div class="card" style="max-width: 500px; margin: 20px; text-align: center;">
+        <h2 style="color: #22c55e; margin-bottom: 15px;">✓ Unsubscribed Successfully</h2>
+        <p id="unsubscribeMessage" style="color: #666; margin-bottom: 20px;"></p>
+        <button class="btn-primary" onclick="closeUnsubscribeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('monitorForm');
+    const checkBtn = document.getElementById('checkBtn');
+    const monitorBtn = document.getElementById('monitorBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const status = document.getElementById('status');
+    const loading = document.getElementById('loading');
+    const resultsContainer = document.getElementById('resultsContainer');
+    const summaryEl = document.getElementById('summary');
+    const resultsEl = document.getElementById('results');
+
+    let currentSessionId = null;
+    let currentSubscriberId = null;
+    let isSharedSession = false;
+
+    function showStatus(message, type = 'info') {
+      status.textContent = message;
+      status.className = `status show ${type}`;
+    }
+
+    function hideStatus() {
+      status.className = 'status';
+    }
+
+    function showLoading() {
+      loading.className = 'loading show';
+    }
+
+    function hideLoading() {
+      loading.className = 'loading';
+    }
+
+    function toggleNotifications() {
+      const settings = document.getElementById('notificationSettings');
+      const toggle = document.getElementById('notificationToggle');
+      if (settings.style.display === 'none') {
+        settings.style.display = 'block';
+        toggle.textContent = '▲';
+      } else {
+        settings.style.display = 'none';
+        toggle.textContent = '▼';
+      }
+    }
+
+    function getFormData() {
+      const openDays = Array.from(document.querySelectorAll('input[name="openDays"]:checked'))
+        .map(cb => parseInt(cb.value));
+
+      return {
+        restaurantUrl: document.getElementById('restaurantUrl').value,
+        restaurantName: document.getElementById('restaurantName').value,
+        partySize: parseInt(document.getElementById('partySize').value),
+        daysToCheck: parseInt(document.getElementById('daysToCheck').value),
+        concurrency: parseInt(document.getElementById('concurrency').value),
+        openDays: openDays.length > 0 ? openDays : [0, 1, 2, 3, 4, 5, 6],
+        slackWebhook: document.getElementById('slackWebhook').value.trim() || null,
+        notifyEmail: document.getElementById('notifyEmail').value.trim() || null
+      };
+    }
+
+    function displayResults(data) {
+      resultsContainer.style.display = 'block';
+
+      // Sort available dates chronologically
+      const sortedAvailable = [...data.available].sort((a, b) => {
+        return new Date(a.date) - new Date(b.date);
+      });
+
+      // Display summary
+      summaryEl.innerHTML = `
+        <h3>${data.restaurantName || 'Restaurant'}</h3>
+        <div class="summary-grid">
+          <div class="summary-item">
+            <div class="summary-value">${data.summary?.totalDays || data.results.length}</div>
+            <div class="summary-label">Days Checked</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-value">${sortedAvailable.length}</div>
+            <div class="summary-label">Available Days</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-value">${sortedAvailable.reduce((sum, d) => sum + d.slots.length, 0)}</div>
+            <div class="summary-label">Total Slots</div>
+          </div>
+        </div>
+      `;
+
+      // Display results
+      if (sortedAvailable.length > 0) {
+        resultsEl.innerHTML = '<h3 style="margin-bottom: 15px;">Available Dates</h3>' +
+          sortedAvailable.map(result => `
+            <div class="result-item available">
+              <div class="result-date">${result.dateDisplay} (Party of ${result.partySize})</div>
+              <div class="result-times">
+                ${result.slots.map(slot => `<a href="${result.bookingUrl || '#'}" target="_blank" class="time-slot" title="Book at ${slot.time}">${slot.time}</a>`).join('')}
+              </div>
+            </div>
+          `).join('');
+      } else {
+        resultsEl.innerHTML = `
+          <div class="result-item">
+            <div class="result-date">No availability found</div>
+            <p style="margin-top: 10px; color: #666;">Keep monitoring - cancellations happen frequently!</p>
+          </div>
+        `;
+      }
+    }
+
+    // Check once
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const formData = getFormData();
+
+      showLoading();
+      hideStatus();
+      checkBtn.disabled = true;
+      monitorBtn.disabled = true;
+
+      try {
+        const response = await fetch('/api/check', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          displayResults(data);
+          if (data.available.length > 0) {
+            showStatus(`Found availability! ${data.available.length} date(s) have open slots.`, 'success');
+          } else {
+            showStatus('No availability found at this time.', 'info');
+          }
+        } else {
+          showStatus(`Error: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        showStatus(`Error: ${error.message}`, 'error');
+      } finally {
+        hideLoading();
+        checkBtn.disabled = false;
+        monitorBtn.disabled = false;
+      }
+    });
+
+    // Start continuous monitoring
+    monitorBtn.addEventListener('click', async () => {
+      const formData = getFormData();
+
+      showLoading();
+      hideStatus();
+      checkBtn.disabled = true;
+      monitorBtn.style.display = 'none';
+      stopBtn.style.display = 'block';
+
+      try {
+        const response = await fetch('/api/monitor/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          currentSessionId = data.sessionId;
+          currentSubscriberId = data.subscriberId;
+          isSharedSession = data.isShared;
+
+          const notifyMsg = data.notifications?.slack || data.notifications?.email
+            ? ' Notifications enabled.'
+            : ' No notifications configured.';
+
+          let statusMsg;
+          if (data.isShared) {
+            statusMsg = `Joined existing monitoring session! ${data.subscriberCount} user(s) now watching this restaurant.${notifyMsg}`;
+          } else {
+            statusMsg = `Monitoring started! Checking every hour.${notifyMsg}`;
+          }
+
+          showStatus(statusMsg, 'success');
+
+          // Update stop button text based on shared status
+          stopBtn.textContent = data.subscriberCount > 1
+            ? 'Unsubscribe from Notifications'
+            : 'Stop Monitoring & Notifications';
+
+          // Poll for results
+          pollResults();
+        } else {
+          showStatus(`Error: ${data.error}`, 'error');
+          resetButtons();
+        }
+      } catch (error) {
+        showStatus(`Error: ${error.message}`, 'error');
+        resetButtons();
+      } finally {
+        hideLoading();
+      }
+    });
+
+    // Stop/Unsubscribe from monitoring
+    stopBtn.addEventListener('click', async () => {
+      if (!currentSessionId || !currentSubscriberId) return;
+
+      try {
+        // Use unsubscribe endpoint to remove just this subscriber
+        const response = await fetch(`/api/monitor/unsubscribe/${currentSessionId}/${currentSubscriberId}`, { method: 'POST' });
+        const data = await response.json();
+
+        if (data.sessionWillStop) {
+          showStatus('Monitoring stopped (you were the last subscriber).', 'info');
+        } else {
+          showStatus(`Unsubscribed from notifications. ${data.remainingSubscribers} user(s) still monitoring.`, 'info');
+        }
+
+        currentSessionId = null;
+        currentSubscriberId = null;
+        isSharedSession = false;
+        resetButtons();
+      } catch (error) {
+        showStatus(`Error: ${error.message}`, 'error');
+      }
+    });
+
+    function resetButtons() {
+      checkBtn.disabled = false;
+      monitorBtn.style.display = 'block';
+      stopBtn.style.display = 'none';
+      stopBtn.textContent = 'Stop Monitoring & Notifications';
+    }
+
+    async function pollResults() {
+      if (!currentSessionId) return;
+
+      try {
+        const response = await fetch(`/api/results/${currentSessionId}`);
+        if (response.ok) {
+          const data = await response.json();
+          displayResults(data);
+        }
+      } catch (error) {
+        console.error('Error polling results:', error);
+      }
+
+      // Poll every 30 seconds
+      if (currentSessionId) {
+        setTimeout(pollResults, 30000);
+      }
+    }
+
+    // Load active monitors on page load
+    loadActiveMonitors();
+
+    async function loadActiveMonitors() {
+      try {
+        const response = await fetch('/api/monitors');
+        const monitors = await response.json();
+
+        const section = document.getElementById('activeMonitorsSection');
+        const container = document.getElementById('activeMonitors');
+
+        if (monitors.length === 0) {
+          section.style.display = 'none';
+          return;
+        }
+
+        section.style.display = 'block';
+        container.innerHTML = monitors.map(m => {
+          const daysText = m.openDays.length === 7 ? 'all days' : `${m.openDays.length} days/week`;
+
+          return `
+            <div class="search-result-item" style="border-color: #22c55e;"
+                 data-url="${m.restaurantUrl}"
+                 data-name="${m.restaurantName || m.restaurantUrl.split('/r/')[1]}"
+                 data-party="${m.partySize}"
+                 data-days="${m.daysToCheck}"
+                 data-opendays="${m.openDays.join(',')}">
+              <div class="search-result-name">${m.restaurantName || m.restaurantUrl.split('/r/')[1]}</div>
+              <div class="search-result-details">
+                Party of ${m.partySize} • ${m.daysToCheck} days • ${daysText} • ${m.subscriberCount} subscriber(s)
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        // Add click handlers
+        container.querySelectorAll('.search-result-item').forEach(item => {
+          item.addEventListener('click', () => {
+            // Populate form with monitor settings
+            document.getElementById('restaurantUrl').value = item.dataset.url;
+            document.getElementById('restaurantName').value = item.dataset.name;
+            document.getElementById('partySize').value = item.dataset.party;
+            document.getElementById('daysToCheck').value = item.dataset.days;
+
+            // Set open days checkboxes
+            const openDays = item.dataset.opendays.split(',').map(Number);
+            document.querySelectorAll('input[name="openDays"]').forEach(cb => {
+              cb.checked = openDays.includes(parseInt(cb.value));
+            });
+
+            // Scroll to form and open notifications
+            document.getElementById('restaurantUrl').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            document.getElementById('notificationSettings').style.display = 'block';
+            document.getElementById('notificationToggle').textContent = '▲';
+
+            showStatus(`Selected active monitor for "${item.dataset.name}". Configure your notifications and click "Start Continuous Monitoring" to join.`, 'success');
+          });
+        });
+      } catch (error) {
+        console.error('Error loading active monitors:', error);
+      }
+    }
+
+    // Refresh active monitors periodically
+    setInterval(loadActiveMonitors, 60000);
+
+    // Restaurant search functionality
+    const searchBtn = document.getElementById('searchBtn');
+    const searchQuery = document.getElementById('searchQuery');
+    const searchLocation = document.getElementById('searchLocation');
+    const geolocateBtn = document.getElementById('geolocateBtn');
+    const locationStatus = document.getElementById('locationStatus');
+    const searchLoading = document.getElementById('searchLoading');
+    const searchResults = document.getElementById('searchResults');
+
+    // Try to get location on page load
+    tryGeolocation(false);
+
+    // Geolocation button click
+    geolocateBtn.addEventListener('click', () => tryGeolocation(true));
+
+    function tryGeolocation(showError = true) {
+      if (!navigator.geolocation) {
+        if (showError) {
+          showLocationStatus('Geolocation is not supported by your browser', 'error');
+        }
+        return;
+      }
+
+      geolocateBtn.disabled = true;
+      geolocateBtn.textContent = '...';
+      showLocationStatus('Getting your location...', 'info');
+
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+
+          // Reverse geocode to get city, state, zipcode
+          try {
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&addressdetails=1`,
+              {
+                headers: {
+                  'User-Agent': 'OpenTableMonitor/1.0'
+                }
+              }
+            );
+
+            if (!response.ok) {
+              throw new Error(`HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('Geocoding response:', data);
+
+            const addr = data.address || {};
+
+            // Try multiple fields for city name
+            const city = addr.city || addr.town || addr.village || addr.hamlet ||
+                        addr.municipality || addr.county || addr.suburb || '';
+            const state = addr.state || addr.region || '';
+            const zipcode = addr.postcode || '';
+
+            // Build location string
+            let parts = [];
+            if (city) parts.push(city);
+            if (state && state !== city) parts.push(state);
+
+            let locationText = parts.join(', ');
+            if (zipcode) {
+              locationText += ` ${zipcode}`;
+            }
+
+            // Fallback to display name if we couldn't parse address
+            if (!locationText.trim() && data.display_name) {
+              // Use first two parts of display name (usually city, state)
+              const displayParts = data.display_name.split(',').slice(0, 2).map(s => s.trim());
+              locationText = displayParts.join(', ');
+            }
+
+            if (locationText.trim()) {
+              searchLocation.value = locationText.trim();
+              showLocationStatus(`Location: ${locationText.trim()}`, 'success');
+            } else {
+              // Last resort - just use coordinates as text
+              searchLocation.value = `near ${lat.toFixed(2)}, ${lng.toFixed(2)}`;
+              showLocationStatus('Location approximated from coordinates', 'info');
+            }
+          } catch (e) {
+            console.error('Geocoding error:', e);
+            // Fallback - use coordinates in a search-friendly format
+            searchLocation.value = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+            showLocationStatus('Using coordinates (geocoding unavailable)', 'info');
+          }
+
+          geolocateBtn.disabled = false;
+          geolocateBtn.textContent = '📍';
+        },
+        (error) => {
+          geolocateBtn.disabled = false;
+          geolocateBtn.textContent = '📍';
+
+          if (showError) {
+            let message = 'Unable to get location';
+            if (error.code === error.PERMISSION_DENIED) {
+              message = 'Location permission denied. Please enter location manually.';
+            }
+            showLocationStatus(message, 'error');
+          } else {
+            hideLocationStatus();
+          }
+        },
+        { timeout: 10000, enableHighAccuracy: false }
+      );
+    }
+
+    function showLocationStatus(message, type) {
+      locationStatus.textContent = message;
+      locationStatus.style.display = 'block';
+      locationStatus.style.color = type === 'error' ? '#ef4444' : type === 'success' ? '#22c55e' : '#666';
+    }
+
+    function hideLocationStatus() {
+      locationStatus.style.display = 'none';
+    }
+
+    // Search on button click
+    searchBtn.addEventListener('click', performSearch);
+
+    // Search on Enter key in either field
+    searchQuery.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') performSearch();
+    });
+    searchLocation.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') performSearch();
+    });
+
+    async function performSearch() {
+      const query = searchQuery.value.trim();
+      const location = searchLocation.value.trim();
+
+      if (!query && !location) {
+        showStatus('Please enter a restaurant name or location', 'error');
+        return;
+      }
+
+      // Build search query - combine name and location
+      // Format: "Restaurant Name City, State Zipcode"
+      let fullQuery = query;
+      if (location && query) {
+        fullQuery = `${query} ${location}`;
+      } else if (location && !query) {
+        fullQuery = location;
+      }
+
+      searchLoading.className = 'search-loading show';
+      searchResults.className = 'search-results';
+      searchBtn.disabled = true;
+
+      try {
+        const response = await fetch(`/api/search?query=${encodeURIComponent(fullQuery)}`);
+        const data = await response.json();
+
+        if (response.ok) {
+          displaySearchResults(data.results);
+        } else {
+          showStatus(`Search error: ${data.error}`, 'error');
+        }
+      } catch (error) {
+        showStatus(`Search error: ${error.message}`, 'error');
+      } finally {
+        searchLoading.className = 'search-loading';
+        searchBtn.disabled = false;
+      }
+    }
+
+    function displaySearchResults(results) {
+      if (results.length === 0) {
+        searchResults.innerHTML = '<p style="padding: 15px; text-align: center; color: #666;">No restaurants found. Try a different search term.</p>';
+        searchResults.className = 'search-results show';
+        return;
+      }
+
+      searchResults.innerHTML = results.map(restaurant => `
+        <div class="search-result-item" data-url="${restaurant.url}" data-name="${restaurant.name}">
+          <div class="search-result-name">${restaurant.name}</div>
+          <div class="search-result-details">
+            ${restaurant.cuisine ? restaurant.cuisine + ' • ' : ''}${restaurant.address || restaurant.slug}
+          </div>
+        </div>
+      `).join('');
+
+      searchResults.className = 'search-results show';
+
+      // Add click handlers to results
+      document.querySelectorAll('.search-result-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const url = item.getAttribute('data-url');
+          const name = item.getAttribute('data-name');
+
+          // Populate form fields
+          document.getElementById('restaurantUrl').value = url;
+          document.getElementById('restaurantName').value = name;
+
+          // Hide search results
+          searchResults.className = 'search-results';
+
+          // Scroll to form
+          document.getElementById('restaurantUrl').scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+          // Show confirmation
+          showStatus(`Selected: ${name}`, 'success');
+          setTimeout(hideStatus, 3000);
+        });
+      });
+    }
+
+    // ============================================
+    // Subscription Management
+    // ============================================
+
+    const lookupBtn = document.getElementById('lookupBtn');
+    const lookupEmail = document.getElementById('lookupEmail');
+    const subscriptionsList = document.getElementById('subscriptionsList');
+    const subscriptionsContent = document.getElementById('subscriptionsContent');
+    const noSubscriptions = document.getElementById('noSubscriptions');
+
+    // Check for unsubscribe token in URL on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const unsubscribeToken = urlParams.get('unsubscribe');
+
+      if (unsubscribeToken) {
+        handleUnsubscribeFromUrl(unsubscribeToken);
+      }
+    });
+
+    async function handleUnsubscribeFromUrl(token) {
+      try {
+        const response = await fetch(`/api/unsubscribe/${token}`);
+        const data = await response.json();
+
+        if (response.ok) {
+          showUnsubscribeModal(data.message);
+          // Clean up the URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+        } else {
+          showStatus(data.error || 'Failed to unsubscribe', 'error');
+        }
+      } catch (error) {
+        showStatus(`Error: ${error.message}`, 'error');
+      }
+    }
+
+    function showUnsubscribeModal(message) {
+      const modal = document.getElementById('unsubscribeModal');
+      document.getElementById('unsubscribeMessage').textContent = message;
+      modal.style.display = 'flex';
+    }
+
+    function closeUnsubscribeModal() {
+      document.getElementById('unsubscribeModal').style.display = 'none';
+    }
+
+    // Look up subscriptions by email
+    lookupBtn.addEventListener('click', lookupSubscriptions);
+    lookupEmail.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        lookupSubscriptions();
+      }
+    });
+
+    async function lookupSubscriptions() {
+      const email = lookupEmail.value.trim();
+
+      if (!email) {
+        showStatus('Please enter an email address', 'error');
+        return;
+      }
+
+      lookupBtn.disabled = true;
+      lookupBtn.textContent = 'Looking up...';
+
+      try {
+        const response = await fetch(`/api/subscriptions/${encodeURIComponent(email)}`);
+        const data = await response.json();
+
+        if (response.ok) {
+          displaySubscriptions(data.subscriptions);
+        } else {
+          showStatus(data.error || 'Failed to look up subscriptions', 'error');
+        }
+      } catch (error) {
+        showStatus(`Error: ${error.message}`, 'error');
+      } finally {
+        lookupBtn.disabled = false;
+        lookupBtn.textContent = 'Look Up';
+      }
+    }
+
+    function displaySubscriptions(subscriptions) {
+      if (subscriptions.length === 0) {
+        subscriptionsList.style.display = 'none';
+        noSubscriptions.style.display = 'block';
+        return;
+      }
+
+      noSubscriptions.style.display = 'none';
+      subscriptionsList.style.display = 'block';
+
+      const daysMap = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+      subscriptionsContent.innerHTML = subscriptions.map(sub => {
+        const daysText = sub.openDays.length === 7
+          ? 'All days'
+          : sub.openDays.map(d => daysMap[d]).join(', ');
+        const createdDate = new Date(sub.createdAt).toLocaleDateString();
+
+        return `
+          <div class="search-result-item" style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="flex: 1;">
+              <div class="search-result-name">${sub.restaurantName || 'Restaurant'}</div>
+              <div class="search-result-details">
+                Party of ${sub.partySize} • ${sub.daysToCheck} days • ${daysText}
+              </div>
+              <div class="search-result-details" style="font-size: 0.8rem; color: #999;">
+                Subscribed on ${createdDate}
+              </div>
+            </div>
+            <button
+              class="btn-danger"
+              style="flex: 0 0 auto; padding: 8px 16px;"
+              onclick="deleteSubscription('${sub.id}')"
+            >
+              Unsubscribe
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function deleteSubscription(id) {
+      if (!confirm('Are you sure you want to unsubscribe from this notification?')) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/subscription/${id}`, {
+          method: 'DELETE'
+        });
+        const data = await response.json();
+
+        if (response.ok) {
+          showStatus('Successfully unsubscribed!', 'success');
+          // Refresh the list
+          lookupSubscriptions();
+        } else {
+          showStatus(data.error || 'Failed to unsubscribe', 'error');
+        }
+      } catch (error) {
+        showStatus(`Error: ${error.message}`, 'error');
+      }
+    }
+
+    // ============================================
+    // Subscribe from Monitor Form
+    // ============================================
+
+    // Add a subscribe button to the form
+    const subscribeBtn = document.createElement('button');
+    subscribeBtn.type = 'button';
+    subscribeBtn.className = 'btn-primary';
+    subscribeBtn.id = 'subscribeBtn';
+    subscribeBtn.textContent = 'Subscribe to Notifications';
+    subscribeBtn.style.background = 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)';
+
+    // Insert after monitor button
+    const buttonGroup = document.querySelector('.button-group');
+    buttonGroup.insertBefore(subscribeBtn, stopBtn);
+
+    subscribeBtn.addEventListener('click', async () => {
+      const formData = getFormData();
+
+      // Validate required fields
+      if (!formData.restaurantUrl) {
+        showStatus('Please enter a restaurant URL', 'error');
+        return;
+      }
+
+      const email = document.getElementById('notifyEmail').value.trim();
+      const slackWebhook = document.getElementById('slackWebhook').value.trim();
+
+      if (!email && !slackWebhook) {
+        showStatus('Please enter an email or Slack webhook to receive notifications', 'error');
+        // Expand notification settings if collapsed
+        const settings = document.getElementById('notificationSettings');
+        if (settings.style.display === 'none') {
+          toggleNotifications();
+        }
+        return;
+      }
+
+      subscribeBtn.disabled = true;
+      subscribeBtn.textContent = 'Subscribing...';
+
+      try {
+        const response = await fetch('/api/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            restaurantUrl: formData.restaurantUrl,
+            restaurantName: formData.restaurantName,
+            partySize: formData.partySize,
+            daysToCheck: formData.daysToCheck,
+            openDays: formData.openDays,
+            email: email || null,
+            slackWebhook: slackWebhook || null
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          showStatus(data.message, 'success');
+          // If email was used, pre-fill the lookup field
+          if (email) {
+            lookupEmail.value = email;
+          }
+        } else {
+          showStatus(data.error || data.errors?.[0]?.msg || 'Failed to subscribe', 'error');
+        }
+      } catch (error) {
+        showStatus(`Error: ${error.message}`, 'error');
+      } finally {
+        subscribeBtn.disabled = false;
+        subscribeBtn.textContent = 'Subscribe to Notifications';
+      }
+    });
+  </script>
+</body>
+</html>
