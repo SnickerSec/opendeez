@@ -7,7 +7,8 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const { body, query, validationResult } = require('express-validator');
 const path = require('path');
-const puppeteer = require('puppeteer');
+const puppeteer = require('puppeteer-core');
+const chromium = require('@sparticuz/chromium');
 const fs = require('fs');
 
 // Logger setup
@@ -472,35 +473,15 @@ async function getBrowser() {
   if (!browserPool) {
     logger.info('Launching browser pool...');
 
-    const launchOptions = {
-      headless: 'new',
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--disable-gpu',
-        '--window-size=1920,1080',
-        '--single-process',
-        '--no-zygote',
-        '--disable-crash-reporter',
-        '--disable-breakpad',
-        '--crash-dumps-dir=/tmp',
-        '--disable-extensions',
-        '--disable-background-networking',
-        '--disable-default-apps',
-        '--disable-sync',
-        '--disable-translate',
-        '--mute-audio',
-        '--hide-scrollbars'
-      ],
-    };
+    const executablePath = await chromium.executablePath();
+    logger.info(`Using Chromium at: ${executablePath}`);
 
-    // Use custom Chromium path if specified (for Railway/Docker)
-    if (process.env.PUPPETEER_EXECUTABLE_PATH) {
-      launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH;
-      logger.info(`Using Chromium at: ${process.env.PUPPETEER_EXECUTABLE_PATH}`);
-    }
+    const launchOptions = {
+      executablePath,
+      headless: chromium.headless,
+      args: chromium.args,
+      defaultViewport: chromium.defaultViewport,
+    };
 
     browserPool = await puppeteer.launch(launchOptions);
 

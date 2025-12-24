@@ -1,33 +1,7 @@
 # Nixpacks configuration for Railway deployment
-# Installs Chromium dependencies for Puppeteer
 
 [phases.setup]
-nixPkgs = [
-  "nodejs_18",
-  "libuuid",
-  "libxkbcommon",
-  "nss",
-  "cups",
-  "libdrm",
-  "mesa",
-  "expat",
-  "fontconfig",
-  "freetype",
-  "glib",
-  "gtk3",
-  "alsa-lib",
-  "at-spi2-atk",
-  "xorg.libX11",
-  "xorg.libXcomposite",
-  "xorg.libXdamage",
-  "xorg.libXext",
-  "xorg.libXfixes",
-  "xorg.libXrandr",
-  "xorg.libxcb",
-  "pango",
-  "cairo",
-  "dbus"
-]
+nixPkgs = ["nodejs_18"]
 
 [phases.install]
 cmds = ["npm ci"]
