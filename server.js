@@ -55,6 +55,10 @@ const escapeHtml = (str) => {
 };
 
 const app = express();
+
+// Trust proxy for Railway/reverse proxy environments (needed for rate limiting)
+app.set('trust proxy', 1);
+
 const dataDir = path.join(__dirname, 'data');
 
 // Ensure data directory exists
@@ -478,7 +482,9 @@ async function getBrowser() {
         '--disable-gpu',
         '--window-size=1920,1080',
         '--single-process',
-        '--no-zygote'
+        '--no-zygote',
+        '--disable-crash-reporter',
+        '--disable-breakpad'
       ],
     };
 
