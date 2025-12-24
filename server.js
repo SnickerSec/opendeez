@@ -1384,7 +1384,13 @@ app.get('/api/results/:sessionId', (req, res) => {
     return res.status(400).json({ error: 'Invalid session ID format' });
   }
 
-  const filepath = path.join(dataDir, `session-${sessionId}.json`);
+  const filename = `session-${sessionId}.json`;
+  const filepath = path.resolve(dataDir, filename);
+
+  // Defense in depth: ensure resolved path is within dataDir
+  if (!filepath.startsWith(path.resolve(dataDir) + path.sep)) {
+    return res.status(400).json({ error: 'Invalid path' });
+  }
 
   if (fs.existsSync(filepath)) {
     const data = JSON.parse(fs.readFileSync(filepath, 'utf8'));
