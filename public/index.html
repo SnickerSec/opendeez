@@ -1002,27 +1002,24 @@
 
             const addr = data.address || {};
 
-            // Try multiple fields for city name
-            const city = addr.city || addr.town || addr.village || addr.hamlet ||
-                        addr.municipality || addr.county || addr.suburb || '';
+            // Prefer well-known city names over obscure neighborhoods
+            // OpenTable needs recognizable locations
+            const city = addr.city || addr.town || addr.municipality || '';
             const state = addr.state || addr.region || '';
             const zipcode = addr.postcode || '';
 
-            // Build location string
-            let parts = [];
-            if (city) parts.push(city);
-            if (state && state !== city) parts.push(state);
-
-            let locationText = parts.join(', ');
-            if (zipcode) {
-              locationText += ` ${zipcode}`;
+            // Build simple location string - prioritize zipcode which is most reliable
+            let locationText = '';
+            if (city) {
+              locationText = city;
+              if (state) locationText += `, ${state}`;
+            } else if (state) {
+              locationText = state;
             }
 
-            // Fallback to display name if we couldn't parse address
-            if (!locationText.trim() && data.display_name) {
-              // Use first two parts of display name (usually city, state)
-              const displayParts = data.display_name.split(',').slice(0, 2).map(s => s.trim());
-              locationText = displayParts.join(', ');
+            // Always append zipcode - it's the most reliable for OpenTable
+            if (zipcode) {
+              locationText = locationText ? `${locationText} ${zipcode}` : zipcode;
             }
 
             if (locationText.trim()) {
