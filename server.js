@@ -839,7 +839,7 @@ async function checkDateAvailability(page, date, partySize, restaurantUrl, prefe
       timeout: 5000
     }).catch(() => null);
 
-    await page.waitForTimeout(2000);
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     const availability = await page.evaluate(() => {
       const slots = [];
@@ -1018,7 +1018,7 @@ app.get('/api/search',
 
         logger.info(`Searching OpenTable: ${searchUrl}`);
         await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
-        await page.waitForTimeout(2000);
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
         const restaurants = await page.evaluate(() => {
           const results = [];
