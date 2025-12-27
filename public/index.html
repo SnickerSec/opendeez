@@ -540,20 +540,8 @@
         </div>
 
 
-        <div class="form-row">
-          <div class="form-group">
-            <label for="concurrency">Parallel Tabs</label>
-            <select id="concurrency">
-              <option value="3">3 tabs (slower)</option>
-              <option value="6" selected>6 tabs (balanced)</option>
-              <option value="9">9 tabs (faster)</option>
-            </select>
-          </div>
-          <div class="form-group"></div>
-        </div>
-
         <div class="notification-section">
-          <div class="notification-header" onclick="toggleNotifications()">
+          <div class="notification-header" id="notificationHeader">
             <span>🔔 Notification Settings (for continuous monitoring)</span>
             <span id="notificationToggle">▼</span>
           </div>
@@ -643,7 +631,7 @@
       <div class="card" style="max-width: 500px; margin: 20px; text-align: center;">
         <h2 style="color: #22c55e; margin-bottom: 15px;">✓ Unsubscribed Successfully</h2>
         <p id="unsubscribeMessage" style="color: #666; margin-bottom: 20px;"></p>
-        <button class="btn-primary" onclick="closeUnsubscribeModal()">Close</button>
+        <button class="btn-primary" id="closeUnsubscribeBtn">Close</button>
       </div>
     </div>
   </div>
@@ -692,6 +680,10 @@
       }
     }
 
+    // Add event listeners for elements that previously used inline onclick
+    document.getElementById('notificationHeader').addEventListener('click', toggleNotifications);
+    document.getElementById('closeUnsubscribeBtn').addEventListener('click', closeUnsubscribeModal);
+
     function getFormData() {
       const openDays = Array.from(document.querySelectorAll('input[name="openDays"]:checked'))
         .map(cb => parseInt(cb.value));
@@ -701,7 +693,7 @@
         restaurantName: document.getElementById('restaurantName').value,
         partySize: parseInt(document.getElementById('partySize').value),
         daysToCheck: parseInt(document.getElementById('daysToCheck').value),
-        concurrency: parseInt(document.getElementById('concurrency').value),
+        concurrency: 6,  // Fixed at balanced level
         openDays: openDays.length > 0 ? openDays : [0, 1, 2, 3, 4, 5, 6],
         slackWebhook: document.getElementById('slackWebhook').value.trim() || null,
         notifyEmail: document.getElementById('notifyEmail').value.trim() || null
@@ -1287,15 +1279,22 @@
               </div>
             </div>
             <button
-              class="btn-danger"
+              class="btn-danger unsubscribe-btn"
               style="flex: 0 0 auto; padding: 8px 16px;"
-              onclick="deleteSubscription('${sub.id}')"
+              data-subscription-id="${sub.id}"
             >
               Unsubscribe
             </button>
           </div>
         `;
       }).join('');
+
+      // Add click handlers for unsubscribe buttons
+      subscriptionsContent.querySelectorAll('.unsubscribe-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          deleteSubscription(btn.dataset.subscriptionId);
+        });
+      });
     }
 
     async function deleteSubscription(id) {
