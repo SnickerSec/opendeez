@@ -680,10 +680,6 @@
       }
     }
 
-    // Add event listeners for elements that previously used inline onclick
-    document.getElementById('notificationHeader').addEventListener('click', toggleNotifications);
-    document.getElementById('closeUnsubscribeBtn').addEventListener('click', closeUnsubscribeModal);
-
     function getFormData() {
       const openDays = Array.from(document.querySelectorAll('input[name="openDays"]:checked'))
         .map(cb => parseInt(cb.value));
@@ -1394,6 +1390,10 @@
         subscribeBtn.textContent = 'Subscribe to Notifications';
       }
     });
+
+    // Add event listeners for elements that previously used inline onclick
+    document.getElementById('notificationHeader').addEventListener('click', toggleNotifications);
+    document.getElementById('closeUnsubscribeBtn').addEventListener('click', closeUnsubscribeModal);
   </script>
 </body>
 </html>
