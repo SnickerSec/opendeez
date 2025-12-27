@@ -1013,8 +1013,11 @@ app.get('/api/search',
         await page.setViewport({ width: 1280, height: 800 });
         await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
 
-        // Search URL - location should already be included in the query text
-        const searchUrl = `https://www.opentable.com/s?covers=2&dateTime=2025-01-01T19:00&term=${encodeURIComponent(searchQuery)}`;
+        // Search URL - use tomorrow's date to ensure future availability
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const dateStr = tomorrow.toISOString().split('T')[0] + 'T19:00';
+        const searchUrl = `https://www.opentable.com/s?covers=2&dateTime=${dateStr}&term=${encodeURIComponent(searchQuery)}`;
 
         logger.info(`Searching OpenTable: ${searchUrl}`);
         await page.goto(searchUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
