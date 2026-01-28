@@ -24,11 +24,11 @@
     "express-rate-limit": "^8.2.1",
     "express-validator": "^7.0.1",
     "helmet": "^8.1.0",
-    "puppeteer": "^24.36.0",
+    "puppeteer": "^24.36.1",
     "puppeteer-core": "^24.34.0",
     "winston": "^3.11.0"
   },
   "optionalDependencies": {
-    "nodemailer": "^7.0.12"
+    "nodemailer": "^7.0.13"
   }
 }
