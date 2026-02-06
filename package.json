@@ -29,6 +29,6 @@
     "winston": "^3.11.0"
   },
   "optionalDependencies": {
-    "nodemailer": "^7.0.13"
+    "nodemailer": "^8.0.0"
   }
 }
