@@ -24,7 +24,7 @@
     "express-rate-limit": "^8.5.2",
     "express-validator": "^7.3.2",
     "helmet": "^8.2.0",
-    "puppeteer": "^24.43.1",
+    "puppeteer": "^25.1.0",
     "puppeteer-core": "^24.34.0",
     "winston": "^3.11.0"
   },
