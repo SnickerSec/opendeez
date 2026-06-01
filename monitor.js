@@ -113,7 +113,7 @@ async function checkDateAvailability(page, date, partySize) {
     }).catch(() => null);
 
     // Give dynamic content time to render
-    await page.waitForTimeout(2000);
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // Extract availability data
     const availability = await page.evaluate(() => {
@@ -329,7 +329,7 @@ async function runMonitor(options) {
   // Launch browser
   console.log('Launching browser...');
   const browser = await puppeteer.launch({
-    headless: options.headless ? 'new' : false,
+    headless: options.headless,
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',

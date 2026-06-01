@@ -1,5 +1,5 @@
 # Build stage
-FROM node:18-slim AS builder
+FROM node:22-slim AS builder
 
 WORKDIR /app
 
@@ -10,7 +10,7 @@ COPY package*.json ./
 RUN npm ci --only=production
 
 # Production stage
-FROM node:18-slim
+FROM node:22-slim
 
 # Install Chrome dependencies for Puppeteer
 RUN apt-get update && apt-get install -y \

@@ -8,7 +8,7 @@ const rateLimit = require('express-rate-limit');
 const { body, query, validationResult } = require('express-validator');
 const path = require('path');
 const puppeteer = require('puppeteer-core');
-const chromium = require('@sparticuz/chromium');
+const chromium = require('@sparticuz/chromium').default;
 const fs = require('fs');
 
 // Logger setup
@@ -478,9 +478,8 @@ async function getBrowser() {
 
     const launchOptions = {
       executablePath,
-      headless: chromium.headless,
+      headless: 'shell',
       args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
     };
 
     browserPool = await puppeteer.launch(launchOptions);

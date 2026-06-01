@@ -1,7 +1,7 @@
 # Nixpacks configuration for Railway deployment
 
 [phases.setup]
-nixPkgs = ["nodejs_18"]
+nixPkgs = ["nodejs_22"]
 
 [phases.install]
 cmds = ["npm ci"]
